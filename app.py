@@ -112,6 +112,11 @@ def dashboard():
 
     return render_template("dashboard.html", users=users)
 
+@app.route("/logout")
+def logout():
+    session.pop("admin", None)
+    return redirect("/")
+
 @app.route("/chat")
 def chat():
     if "admin" not in session:
