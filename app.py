@@ -160,17 +160,17 @@ def get_messages():
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
-            SELECT sender, text, timestamp 
-            FROM messages
-            WHERE (sender = %s AND receiver = %s)
-               OR (sender = %s AND receiver = %s)
-            ORDER BY timestamp ASC
-        """, (admin, chat_with, chat_with, admin))
+    SELECT sender, text, timestamp, id 
+    FROM messages
+    WHERE (sender = %s AND receiver = %s)
+       OR (sender = %s AND receiver = %s)
+    ORDER BY timestamp ASC
+""", (admin, chat_with, chat_with, admin))
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
-        messages = [{"sender": row[0], "text": row[1], "timestamp": row[2].strftime("%b %d, %I:%M %p")} for row in rows]
+        messages = [{"id": row[3], "sender": row[0], "text": row[1], "timestamp": str(row[2])} for row in rows]
         return jsonify({"messages": messages})
     except Exception as e:
         print(f"❌ Error getting messages: {e}")
@@ -201,5 +201,27 @@ def send_message():
     except Exception as e:
         print(f"❌ Error sending message: {e}")
         return jsonify({"status": "failed", "message": str(e)}), 500
+        
+
+@app.route("/delete_message", methods=["POST"])
+def delete_message():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+
+    data = request.get_json()
+    message_id = data.get("id")
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM messages WHERE id = %s", (message_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "deleted"})
+    except Exception as e:
+        print(f"❌ Error deleting message: {e}")
+        return jsonify({"status": "failed", "message": str(e)}), 500
+
 
 
