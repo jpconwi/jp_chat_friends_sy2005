@@ -6,6 +6,27 @@ from db import get_connection
 app = Flask(__name__)
 CORS(app)
 
+# === CREATE admin TABLE IF NOT EXISTS ===
+@app.before_first_request
+def create_admin_table():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS admin (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT,
+                password_hash TEXT NOT NULL
+            );
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ 'admin' table ensured.")
+    except Exception as e:
+        print(f"❌ Error creating admin table: {e}")
+
 # --- Route: Home page ---
 @app.route("/")
 def home():
@@ -29,7 +50,6 @@ def register():
             return jsonify({"status": "failed", "message": "Username already exists"}), 400
 
         # Hash password
-        from werkzeug.security import generate_password_hash
         hashed_pw = generate_password_hash(password)
 
         # Insert into admin table
