@@ -6,6 +6,7 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
+  padding: 1rem;
 }
 
 .box {
@@ -13,9 +14,11 @@ body {
   padding: 30px;
   border-radius: 10px;
   box-shadow: 0px 0px 10px #ccc;
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   text-align: center;
   position: relative;
+  box-sizing: border-box;
 }
 
 .icon {
@@ -30,6 +33,7 @@ input {
   padding: 10px;
   width: 100%;
   box-sizing: border-box;
+  font-size: 1rem;
 }
 
 button {
@@ -40,6 +44,7 @@ button {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  font-size: 1rem;
 }
 
 button:hover {
@@ -51,6 +56,7 @@ button:hover {
   text-align: center;
   cursor: pointer;
   color: #3498db;
+  font-size: 0.95rem;
 }
 
 .link:hover {
@@ -61,4 +67,22 @@ button:hover {
   margin-top: 10px;
   color: red;
   text-align: center;
+}
+
+/* ✅ Mobile-friendly tweaks */
+@media (max-width: 500px) {
+  .box {
+    padding: 20px;
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 0 5px #bbb;
+  }
+
+  .icon {
+    font-size: 36px;
+  }
+
+  input, button {
+    font-size: 0.95rem;
+  }
 }
