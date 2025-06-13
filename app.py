@@ -15,6 +15,10 @@ conn = get_connection()
 
 cursor = conn.cursor()
 
+@app.route("/", methods=["GET"])
+def home():
+    return "<h2>✅ Flask backend is running. Use POST requests for /login and /register</h2>"
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
