@@ -1,14 +1,29 @@
 <!DOCTYPE html>
-<html>
-<head><title>Admin Dashboard</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
 <body>
-  <h1>Welcome, Admin!</h1>
-  <h2>Registered Users</h2>
-  <ul>
-    {% for user in users %}
-      <li>{{ user[0] }} ({{ user[1] }}) <button onclick="startChat('{{ user[0] }}')">Chat</button></li>
-    {% endfor %}
-  </ul>
+  <div class="dashboard-container">
+    <header>
+      <h1>Welcome, Admin!</h1>
+      <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
+    </header>
+
+    <section class="users-section">
+      <h2>Registered Users</h2>
+      <ul class="user-list">
+        {% for user in users %}
+          <li>
+            <span>{{ user[0] }} ({{ user[1] }})</span>
+            <button class="chat-btn" onclick="startChat('{{ user[0] }}')">Chat</button>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
 
   <script>
     function startChat(username) {
