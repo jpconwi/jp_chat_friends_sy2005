@@ -21,21 +21,15 @@ def register():
     try:
         conn = get_connection()
         cur = conn.cursor()
-
-        # Check if username already exists in `admin` table
         cur.execute("SELECT * FROM admin WHERE username = %s", (username,))
         if cur.fetchone():
-            cur.close()
-            conn.close()
             return jsonify({"status": "failed", "message": "Username already exists"}), 400
 
-        # Hash the password
+        from werkzeug.security import generate_password_hash
         hashed_pw = generate_password_hash(password)
 
-        # Insert into `admin` table
         cur.execute("INSERT INTO admin (username, password_hash) VALUES (%s, %s)", (username, hashed_pw))
         conn.commit()
-
         cur.close()
         conn.close()
 
