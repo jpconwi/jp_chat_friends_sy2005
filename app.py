@@ -105,7 +105,7 @@ def dashboard():
 
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT username, email FROM users")  # adjust table/columns as needed
+    cur.execute("SELECT username, email FROM admin")  # fixed table name
     users = cur.fetchall()
     cur.close()
     conn.close()
