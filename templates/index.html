@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Chat Login</title>
+  <meta charset="UTF-8" />
+  <title>Chat App Login</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,11 +12,12 @@
       align-items: center;
       height: 100vh;
     }
-    .login-box {
+    .box {
       background: white;
       padding: 30px;
       border-radius: 10px;
       box-shadow: 0px 0px 10px #ccc;
+      width: 300px;
     }
     input {
       display: block;
@@ -32,45 +33,95 @@
       border: none;
       cursor: pointer;
     }
+    .link {
+      margin-top: 10px;
+      text-align: center;
+      cursor: pointer;
+      color: #3498db;
+    }
     .message {
       margin-top: 10px;
       color: red;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="login-box">
+  <div class="box" id="login-box">
     <h2>Login</h2>
     <form id="login-form">
-      <input type="text" id="username" placeholder="Username" required />
-      <input type="password" id="password" placeholder="Password" required />
+      <input type="text" id="login-username" placeholder="Username" required />
+      <input type="password" id="login-password" placeholder="Password" required />
       <button type="submit">Login</button>
     </form>
-    <div class="message" id="message"></div>
+    <div class="link" onclick="toggleForm()">No account? Register</div>
+    <div class="message" id="login-message"></div>
+  </div>
+
+  <div class="box" id="register-box" style="display: none;">
+    <h2>Register</h2>
+    <form id="register-form">
+      <input type="text" id="reg-username" placeholder="Username" required />
+      <input type="email" id="reg-email" placeholder="Email" required />
+      <input type="password" id="reg-password" placeholder="Password" required />
+      <button type="submit">Register</button>
+    </form>
+    <div class="link" onclick="toggleForm()">Have an account? Login</div>
+    <div class="message" id="register-message"></div>
   </div>
 
   <script>
-    const form = document.getElementById("login-form");
-    const message = document.getElementById("message");
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
 
-    form.addEventListener("submit", async (e) => {
+    const loginMessage = document.getElementById("login-message");
+    const registerMessage = document.getElementById("register-message");
+
+    function toggleForm() {
+      document.getElementById("login-box").style.display =
+        document.getElementById("login-box").style.display === "none" ? "block" : "none";
+      document.getElementById("register-box").style.display =
+        document.getElementById("register-box").style.display === "none" ? "block" : "none";
+    }
+
+    loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const res = await fetch("/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: form.username.value,
-          password: form.password.value,
+          username: loginForm["login-username"].value,
+          password: loginForm["login-password"].value,
         }),
       });
-
       const data = await res.json();
       if (res.status === 200) {
-        message.style.color = "green";
-        message.innerText = "Login successful!";
+        loginMessage.style.color = "green";
+        loginMessage.innerText = "✅ Login successful!";
       } else {
-        message.style.color = "red";
-        message.innerText = "Login failed!";
+        loginMessage.style.color = "red";
+        loginMessage.innerText = "❌ Login failed!";
+      }
+    });
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: registerForm["reg-username"].value,
+          email: registerForm["reg-email"].value,
+          password: registerForm["reg-password"].value,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 201) {
+        registerMessage.style.color = "green";
+        registerMessage.innerText = "✅ Registered! You can now login.";
+      } else {
+        registerMessage.style.color = "red";
+        registerMessage.innerText = "❌ Registration failed!";
       }
     });
   </script>
