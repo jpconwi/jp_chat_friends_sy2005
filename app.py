@@ -15,29 +15,38 @@ def home():
 @app.route("/register", methods=["POST"])
 def register():
     data = request.json
-    username = data["username"]
-    password = data["password"]
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
 
     try:
         conn = get_connection()
         cur = conn.cursor()
+
+        # Check if username already exists
         cur.execute("SELECT * FROM admin WHERE username = %s", (username,))
         if cur.fetchone():
             return jsonify({"status": "failed", "message": "Username already exists"}), 400
 
+        # Hash password
         from werkzeug.security import generate_password_hash
         hashed_pw = generate_password_hash(password)
 
-        cur.execute("INSERT INTO admin (username, password_hash) VALUES (%s, %s)", (username, hashed_pw))
+        # Insert into admin table
+        cur.execute(
+            "INSERT INTO admin (username, email, password_hash) VALUES (%s, %s, %s)",
+            (username, email, hashed_pw)
+        )
         conn.commit()
         cur.close()
         conn.close()
 
-        return jsonify({"status": "success"}), 200
+        return jsonify({"status": "success"}), 201
 
     except Exception as e:
         print("Registration error:", e)
         return jsonify({"status": "failed", "message": str(e)}), 500
+
 # --- Route: Login ---
 @app.route("/login", methods=["POST"])
 def login():
