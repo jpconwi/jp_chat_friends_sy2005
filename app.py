@@ -7,7 +7,6 @@ app = Flask(__name__)
 CORS(app)
 
 # === CREATE admin TABLE IF NOT EXISTS ===
-@app.before_first_request
 def create_admin_table():
     try:
         conn = get_connection()
@@ -26,6 +25,11 @@ def create_admin_table():
         print("✅ 'admin' table ensured.")
     except Exception as e:
         print(f"❌ Error creating admin table: {e}")
+
+# Run it once at startup
+with app.app_context():
+    create_admin_table()
+
 
 # --- Route: Home page ---
 @app.route("/")
