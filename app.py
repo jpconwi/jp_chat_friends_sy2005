@@ -143,9 +143,9 @@ def logout():
 def chat():
     if "admin" not in session:
         return redirect("/")
-    
+
     chat_with = request.args.get("with")
-    return render_template("chat.html", chat_with=chat_with)
+    return render_template("chat.html", chat_with=chat_with, current_admin=session["admin"])
 
 
 @app.route("/get_messages")
