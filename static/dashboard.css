@@ -12,12 +12,15 @@ body {
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .logout-btn {
@@ -41,6 +44,7 @@ header {
 .user-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .user-list li {
@@ -51,6 +55,8 @@ header {
   margin: 8px 0;
   background-color: #f0f0f0;
   border-radius: 6px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .chat-btn {
@@ -64,4 +70,27 @@ header {
 
 .chat-btn:hover {
   background-color: #2980b9;
+}
+
+/* ✅ Mobile-friendly adjustments */
+@media (max-width: 600px) {
+  .dashboard-container {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .user-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chat-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .logout-btn {
+    width: 100%;
+    text-align: center;
+  }
 }
