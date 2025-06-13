@@ -3,51 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <title>Chat App Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .box {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0px 0px 10px #ccc;
-      width: 300px;
-    }
-    input {
-      display: block;
-      margin-bottom: 15px;
-      padding: 10px;
-      width: 100%;
-    }
-    button {
-      padding: 10px;
-      width: 100%;
-      background: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .link {
-      margin-top: 10px;
-      text-align: center;
-      cursor: pointer;
-      color: #3498db;
-    }
-    .message {
-      margin-top: 10px;
-      color: red;
-      text-align: center;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
   <div class="box" id="login-box">
+    <div class="icon">🗨️</div>
     <h2>Login</h2>
     <form id="login-form">
       <input type="text" id="login-username" placeholder="Username" required />
@@ -59,6 +19,7 @@
   </div>
 
   <div class="box" id="register-box" style="display: none;">
+    <div class="icon">🗨️</div>
     <h2>Register</h2>
     <form id="register-form">
       <input type="text" id="reg-username" placeholder="Username" required />
@@ -73,7 +34,6 @@
   <script>
     const loginForm = document.getElementById("login-form");
     const registerForm = document.getElementById("register-form");
-
     const loginMessage = document.getElementById("login-message");
     const registerMessage = document.getElementById("register-message");
 
@@ -85,23 +45,24 @@
     }
 
     loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const res = await fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: loginForm["login-username"].value,
-      password: loginForm["login-password"].value,
-    }),
-  });
-  const data = await res.json();
-  if (res.status === 200 && data.status === "success") {
-    window.location.href = data.redirect;
-  } else {
-    loginMessage.style.color = "red";
-    loginMessage.innerText = "❌ " + (data.message || "Login failed!");
-  }
-});
+      e.preventDefault();
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: loginForm["login-username"].value,
+          password: loginForm["login-password"].value,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 200 && data.status === "success") {
+        window.location.href = data.redirect;
+      } else {
+        loginMessage.style.color = "red";
+        loginMessage.innerText = "❌ " + (data.message || "Login failed!");
+      }
+    });
+
     registerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const res = await fetch("/register", {
