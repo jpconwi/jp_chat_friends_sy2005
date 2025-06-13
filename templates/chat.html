@@ -1,17 +1,67 @@
 <!DOCTYPE html>
 <html>
-<head><title>Chat with {{ chat_with }}</title></head>
+<head>
+  <title>Chat with {{ chat_with }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+</head>
 <body>
-  <h1>Chatting with {{ chat_with }}</h1>
-  <div id="messages"></div>
-  <input id="msg" type="text" placeholder="Type a message">
-  <button onclick="sendMsg()">Send</button>
+  <div class="chat-container">
+    <div class="chat-header">
+      <button onclick="goBack()">← Back</button>
+      <h2>Chatting with {{ chat_with }}</h2>
+    </div>
+
+    <div id="messages" class="chat-messages">
+      <!-- Chat messages will be dynamically inserted here -->
+    </div>
+
+    <div class="chat-input">
+      <input id="msg" type="text" placeholder="Type a message" />
+      <button onclick="sendMsg()">Send</button>
+    </div>
+  </div>
 
   <script>
-    function sendMsg() {
-      const msg = document.getElementById('msg').value;
-      // send via fetch/post, WebSocket, or store in DB
+    const chatWith = "{{ chat_with }}";
+
+    function goBack() {
+      window.location.href = "/dashboard";
     }
+
+    async function loadMessages() {
+      const res = await fetch(`/get_messages?with=${chatWith}`);
+      const data = await res.json();
+      const messagesDiv = document.getElementById("messages");
+      messagesDiv.innerHTML = "";
+
+      data.messages.forEach(msg => {
+        const div = document.createElement("div");
+        div.className = msg.sender === "admin" ? "admin-msg" : "user-msg";
+        div.textContent = `${msg.sender}: ${msg.text}`;
+        messagesDiv.appendChild(div);
+      });
+    }
+
+    async function sendMsg() {
+      const msg = document.getElementById("msg").value;
+      if (!msg.trim()) return;
+
+      await fetch("/send_message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: chatWith,
+          text: msg
+        })
+      });
+
+      document.getElementById("msg").value = "";
+      loadMessages();
+    }
+
+    // Initial load and poll every 5 seconds
+    loadMessages();
+    setInterval(loadMessages, 5000);
   </script>
 </body>
 </html>
