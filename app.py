@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 from db import get_connection
@@ -81,7 +81,30 @@ def login():
     user = cur.fetchone()
     cur.close()
     conn.close()
-    
+
     if user and check_password_hash(user[0], data["password"]):
-        return jsonify({"status": "success"}), 200
+        session["admin"] = data["username"]
+        return jsonify({"status": "success", "redirect": "/dashboard"}), 200
     return jsonify({"status": "failed"}), 401
+
+@app.route("/dashboard")
+def dashboard():
+    if "admin" not in session:
+        return redirect("/")
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT username, email FROM users")  # adjust table/columns as needed
+    users = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return render_template("dashboard.html", users=users)
+
+@app.route("/chat")
+def chat():
+    if "admin" not in session:
+        return redirect("/")
+    
+    chat_with = request.args.get("with")
+    return render_template("chat.html", chat_with=chat_with)
