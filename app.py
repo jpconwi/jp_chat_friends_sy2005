@@ -17,7 +17,7 @@ def login():
     data = request.json
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT password_hash FROM users WHERE username = %s", (data["username"],))
+    cur.execute("SELECT password_hash FROM admin WHERE username = %s", (data["username"],))
     user = cur.fetchone()
     cur.close()
     conn.close()
