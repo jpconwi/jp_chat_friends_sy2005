@@ -97,9 +97,10 @@ button {
 }
 
 .admin-msg button {
+  margin-left: 10px;
   background: none;
   border: none;
   color: red;
-  margin-left: 10px;
-  font-size: 14px;
+  cursor: pointer;
 }
+
