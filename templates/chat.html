@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Chat with {{ chat_with }}</title></head>
+<body>
+  <h1>Chatting with {{ chat_with }}</h1>
+  <div id="messages"></div>
+  <input id="msg" type="text" placeholder="Type a message">
+  <button onclick="sendMsg()">Send</button>
+
+  <script>
+    function sendMsg() {
+      const msg = document.getElementById('msg').value;
+      // send via fetch/post, WebSocket, or store in DB
+    }
+  </script>
+</body>
+</html>

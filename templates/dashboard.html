@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Admin Dashboard</title></head>
+<body>
+  <h1>Welcome, Admin!</h1>
+  <h2>Registered Users</h2>
+  <ul>
+    {% for user in users %}
+      <li>{{ user[0] }} ({{ user[1] }}) <button onclick="startChat('{{ user[0] }}')">Chat</button></li>
+    {% endfor %}
+  </ul>
+
+  <script>
+    function startChat(username) {
+      window.location.href = `/chat?with=${username}`;
+    }
+  </script>
+</body>
+</html>
