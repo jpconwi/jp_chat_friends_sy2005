@@ -85,25 +85,23 @@
     }
 
     loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const res = await fetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: loginForm["login-username"].value,
-          password: loginForm["login-password"].value,
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 200) {
-        loginMessage.style.color = "green";
-        loginMessage.innerText = "✅ Login successful!";
-      } else {
-        loginMessage.style.color = "red";
-        loginMessage.innerText = "❌ Login failed!";
-      }
-    });
-
+  e.preventDefault();
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: loginForm["login-username"].value,
+      password: loginForm["login-password"].value,
+    }),
+  });
+  const data = await res.json();
+  if (res.status === 200 && data.status === "success") {
+    window.location.href = data.redirect;
+  } else {
+    loginMessage.style.color = "red";
+    loginMessage.innerText = "❌ " + (data.message || "Login failed!");
+  }
+});
     registerForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const res = await fetch("/register", {
