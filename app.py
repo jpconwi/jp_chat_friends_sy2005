@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 from db import get_connection
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"  # Put this BEFORE anything using sessions
@@ -27,9 +28,30 @@ def create_admin_table():
     except Exception as e:
         print(f"❌ Error creating admin table: {e}")
 
+def create_messages_table():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                sender TEXT NOT NULL,
+                receiver TEXT NOT NULL,
+                text TEXT NOT NULL,
+                timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ 'messages' table ensured.")
+    except Exception as e:
+        print(f"❌ Error creating messages table: {e}")
+
 # Run it once at startup
 with app.app_context():
     create_admin_table()
+    create_messages_table()
 
 
 # --- Route: Home page ---
@@ -105,7 +127,7 @@ def dashboard():
 
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT username, email FROM admin")  # fixed table name
+    cur.execute("SELECT username, email FROM admin WHERE username != %s", (session["admin"],))
     users = cur.fetchall()
     cur.close()
     conn.close()
@@ -124,3 +146,60 @@ def chat():
     
     chat_with = request.args.get("with")
     return render_template("chat.html", chat_with=chat_with)
+
+
+@app.route("/get_messages")
+def get_messages():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+
+    chat_with = request.args.get("with")
+    admin = session["admin"]
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT sender, text, timestamp 
+            FROM messages
+            WHERE (sender = %s AND receiver = %s)
+               OR (sender = %s AND receiver = %s)
+            ORDER BY timestamp ASC
+        """, (admin, chat_with, chat_with, admin))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        messages = [{"sender": row[0], "text": row[1], "timestamp": row[2].strftime("%b %d, %I:%M %p")} for row in rows]
+        return jsonify({"messages": messages})
+    except Exception as e:
+        print(f"❌ Error getting messages: {e}")
+        return jsonify({"messages": [], "error": str(e)}), 500
+
+
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+
+    data = request.get_json()
+    sender = session["admin"]
+    receiver = data.get("to")
+    text = data.get("text")
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO messages (sender, receiver, text)
+            VALUES (%s, %s, %s)
+        """, (sender, receiver, text))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "sent"})
+    except Exception as e:
+        print(f"❌ Error sending message: {e}")
+        return jsonify({"status": "failed", "message": str(e)}), 500
+
+
