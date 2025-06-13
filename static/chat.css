@@ -75,3 +75,31 @@ body {
   border: none;
   cursor: pointer;
 }
+
+button {
+  cursor: pointer;
+}
+
+.admin-msg, .user-msg {
+  padding: 8px;
+  margin: 4px;
+  border-radius: 6px;
+}
+
+.admin-msg {
+  background-color: #e0ffe0;
+  text-align: right;
+}
+
+.user-msg {
+  background-color: #f0f0f0;
+  text-align: left;
+}
+
+.admin-msg button {
+  background: none;
+  border: none;
+  color: red;
+  margin-left: 10px;
+  font-size: 14px;
+}
