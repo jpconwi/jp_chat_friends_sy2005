@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from db import get_connection
 
 app = Flask(__name__)
+app.secret_key = "your-secret-key"  # Put this BEFORE anything using sessions
 CORS(app)
 
 # === CREATE admin TABLE IF NOT EXISTS ===
@@ -39,7 +40,10 @@ def home():
 # --- Route:Register ---
 @app.route("/register", methods=["POST"])
 def register():
-    data = request.json
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "failed", "message": "No data provided"}), 400
+
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
@@ -74,18 +78,25 @@ def register():
 # --- Route: Login ---
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.json
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT password_hash FROM admin WHERE username = %s", (data["username"],))
-    user = cur.fetchone()
-    cur.close()
-    conn.close()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "failed", "message": "No data sent"}), 400
 
-    if user and check_password_hash(user[0], data["password"]):
-        session["admin"] = data["username"]
-        return jsonify({"status": "success", "redirect": "/dashboard"}), 200
-    return jsonify({"status": "failed"}), 401
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT password_hash FROM admin WHERE username = %s", (data["username"],))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if user and check_password_hash(user[0], data["password"]):
+            session["admin"] = data["username"]
+            return jsonify({"status": "success", "redirect": "/dashboard"}), 200
+        return jsonify({"status": "failed", "message": "Invalid credentials"}), 401
+    except Exception as e:
+        print(f"❌ Login error: {e}")
+        return jsonify({"status": "failed", "message": str(e)}), 500
 
 @app.route("/dashboard")
 def dashboard():
