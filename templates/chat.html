@@ -12,7 +12,7 @@
     </div>
 
     <div id="messages" class="chat-messages">
-      <!-- Chat messages will be dynamically inserted here -->
+      <!-- Chat messages will appear here -->
     </div>
 
     <div class="chat-input">
@@ -29,37 +29,42 @@
     }
 
     async function loadMessages() {
-      const res = await fetch(`/get_messages?with=${chatWith}`);
-      const data = await res.json();
-      const messagesDiv = document.getElementById("messages");
-      messagesDiv.innerHTML = "";
+      try {
+        const res = await fetch(`/get_messages?with=${chatWith}`);
+        const data = await res.json();
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "";
 
-      data.messages.forEach(msg => {
-        const div = document.createElement("div");
-        div.className = msg.sender === "admin" ? "admin-msg" : "user-msg";
-        div.textContent = `${msg.sender}: ${msg.text}`;
-        messagesDiv.appendChild(div);
-      });
+        data.messages.forEach(msg => {
+          const div = document.createElement("div");
+          div.className = msg.sender === chatWith ? "user-msg" : "admin-msg";
+          div.textContent = `${msg.sender}: ${msg.text}`;
+          messagesDiv.appendChild(div);
+        });
+
+        // Scroll to bottom
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      } catch (e) {
+        console.error("Error loading messages", e);
+      }
     }
 
     async function sendMsg() {
-      const msg = document.getElementById("msg").value;
-      if (!msg.trim()) return;
+      const msgInput = document.getElementById("msg");
+      const msg = msgInput.value.trim();
+      if (!msg) return;
 
       await fetch("/send_message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: chatWith,
-          text: msg
-        })
+        body: JSON.stringify({ to: chatWith, text: msg })
       });
 
-      document.getElementById("msg").value = "";
+      msgInput.value = "";
       loadMessages();
     }
 
-    // Initial load and poll every 5 seconds
+    // Initial load and auto-refresh every 5 seconds
     loadMessages();
     setInterval(loadMessages, 5000);
   </script>
