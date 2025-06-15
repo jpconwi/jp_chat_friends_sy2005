@@ -17,28 +17,29 @@
       <h2>Registered Users</h2>
       <ul class="user-list">
   {% for user in users %}
-    <li class="user-item">
-      <div class="user-info">
-        <span class="username">{{ user[0] }} ({{ user[1] }})</span>
+  <li class="user-item">
+    <div class="user-info">
+      <span class="username">{{ user[0] }} ({{ user[1] }})</span>
 
-        {% if user[2] %}
-          <span class="status online">● Online</span>
-        {% else %}
-          <span class="status offline">● Offline</span>
-        {% endif %}
+      {% if user[2] %}
+        <span class="status online">● Online</span>
+      {% else %}
+        <span class="status offline">● Offline</span>
+      {% endif %}
 
-        {% if user[4] %}
-          <img src="{{ url_for('static', filename='seen_icon.png') }}" class="seen-icon" alt="Seen">
-        {% endif %}
+      {% if user[4] %}
+        <img src="{{ url_for('static', filename='seen_icon.png') }}" class="seen-icon" alt="Seen">
+      {% endif %}
 
-        {% if user[3] %}
-          <span class="typing">...</span>
-        {% endif %}
-      </div>
+      {% if user[3] %}
+        <span class="typing">...</span>
+      {% endif %}
+    </div>
 
-      <button class="chat-btn" onclick="startChat('{{ user[0] }}')">Chat</button>
-    </li>
-  {% endfor %}
+    <button class="chat-btn" onclick="startChat('{{ user[0] }}')">Chat</button>
+  </li>
+{% endfor %}
+
 </ul>
 
     </section>
