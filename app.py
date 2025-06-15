@@ -127,12 +127,19 @@ def dashboard():
 
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT username, email FROM admin WHERE username != %s", (session["admin"],))
+    
+    # Join with users table instead of admin to list actual users
+    cur.execute("""
+        SELECT username, email, is_online, is_typing, has_seen_last_message
+        FROM users
+    """)
     users = cur.fetchall()
+
     cur.close()
     conn.close()
 
     return render_template("dashboard.html", users=users)
+
 
 @app.route("/logout")
 def logout():
