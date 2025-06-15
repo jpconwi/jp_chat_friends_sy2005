@@ -9,6 +9,7 @@
 <body>
   <div class="dashboard-container">
     <header>
+      <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
       <h1>Welcome, Admin!</h1>
       <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
     </header>
@@ -54,5 +55,22 @@
       window.location.href = `/chat?with=${username}`;
     }
   </script>
+  <script>
+  function toggleDarkMode() {
+  const darkMode = document.body.classList.toggle("dark-mode");
+  localStorage.setItem("darkMode", darkMode);
+  document.querySelector(".dark-mode-btn").innerText = darkMode ? "☀️" : "🌙";
+}
+
+  // Load preference
+  window.onload = function () {
+    const darkModeEnabled = localStorage.getItem("darkMode") === "true";
+if (darkModeEnabled) {
+  document.body.classList.add("dark-mode");
+  document.querySelector(".dark-mode-btn").innerText = "☀️";
+}
+  };
+</script>
 </body>
+
 </html>
