@@ -128,13 +128,13 @@ def dashboard():
     conn = get_connection()
     cur = conn.cursor()
     
-    # Join with users table instead of admin to list actual users
     cur.execute("""
         SELECT username, email, is_online, is_typing, has_seen_last_message
-        FROM users
-    """)
+        FROM admin
+        WHERE username != %s
+    """, (session["admin"],))
+    
     users = cur.fetchall()
-
     cur.close()
     conn.close()
 
