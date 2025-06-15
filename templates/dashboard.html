@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
@@ -16,36 +16,40 @@
     <section class="users-section">
       <h2>Registered Users</h2>
       <ul class="user-list">
-  {% for user in users %}
-  <li class="user-item">
-    <div class="user-info">
-      <span class="username">{{ user[0] }} ({{ user[1] }})</span>
-
-      {% if user[2] %}
-        <span class="status online">● Online</span>
-      {% else %}
-        <span class="status offline">● Offline</span>
-      {% endif %}
-
-      {% if user[4] %}
-        <img src="{{ url_for('static', filename='seen_icon.png') }}" class="seen-icon" alt="Seen">
-      {% endif %}
-
-      {% if user[3] %}
-        <span class="typing">...</span>
-      {% endif %}
-    </div>
-
-    <button class="chat-btn" onclick="startChat('{{ user[0] }}')">Chat</button>
-  </li>
-{% endfor %}
-
-</ul>
-
+        {% for user in users %}
+        <li class="user-item" onclick="startChat('{{ user[0] }}')">
+          <span id="status-{{ user[0] }}" class="status-dot"></span>
+          {{ user[0] }}
+          <span id="typing-{{ user[0] }}" class="typing-text"></span>
+        </li>
+        {% endfor %}
+      </ul>
     </section>
   </div>
 
   <script>
+    function fetchAdminStatus() {
+      fetch("/admin_status")
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(user => {
+            const dot = document.getElementById("status-" + user.username);
+            const typing = document.getElementById("typing-" + user.username);
+
+            if (dot) {
+              dot.style.backgroundColor = user.is_online ? "green" : "gray";
+            }
+
+            if (typing) {
+              typing.innerText = user.is_typing ? "Typing..." : "";
+            }
+          });
+        })
+        .catch(err => console.error("Error fetching admin status:", err));
+    }
+
+    setInterval(fetchAdminStatus, 2000);
+
     function startChat(username) {
       window.location.href = `/chat?with=${username}`;
     }
