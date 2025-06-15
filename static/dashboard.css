@@ -95,3 +95,22 @@ header {
     align-items: flex-start;
   }
 }
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: gray; /* Offline default */
+  margin-right: 8px;
+}
+
+.typing-text {
+  font-style: italic;
+  color: #888;
+  margin-left: 10px;
+}
+
+.user-list li:hover {
+  background-color: #e0e0e0;
+}
