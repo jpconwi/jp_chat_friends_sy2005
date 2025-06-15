@@ -2,12 +2,13 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 from db import get_connection
+import os
 from datetime import datetime, timedelta
-app.permanent_session_lifetime = timedelta(minutes=30)
 
 
 app = Flask(__name__)
-app.secret_key = "your-secret-key"  # Put this BEFORE anything using sessions
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
+app.permanent_session_lifetime = timedelta(minutes=30)
 CORS(app)
 
 # === CREATE admin TABLE IF NOT EXISTS ===
@@ -70,10 +71,13 @@ def add_missing_columns():
 
 
 # Run it once at startup
-with app.app_context():
-    create_admin_table()
-    create_messages_table()
-    add_missing_columns()
+if __name__ == "__main__":
+    with app.app_context():
+        create_admin_table()
+        create_messages_table()
+        add_missing_columns()
+    app.run(debug=True)
+
 
 
 # --- Route: Home page ---
@@ -134,6 +138,8 @@ def login():
 
         if user and check_password_hash(user[0], data["password"]):
             session["admin"] = data["username"]
+            session.permanent = True
+            session["login_time"] = datetime.utcnow().isoformat()
 
             # Set online status
             cur.execute("UPDATE admin SET is_online = TRUE WHERE username = %s", (data["username"],))
@@ -146,9 +152,11 @@ def login():
         cur.close()
         conn.close()
         return jsonify({"status": "failed", "message": "Invalid credentials"}), 401
+
     except Exception as e:
         print(f"❌ Login error: {e}")
         return jsonify({"status": "failed", "message": str(e)}), 500
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -325,6 +333,18 @@ def set_typing():
     except Exception as e:
         print(f"❌ Error setting typing: {e}")
         return jsonify({"status": "failed", "message": str(e)}), 500
+
+@app.route("/check_session")
+def check_session():
+    return jsonify({"logged_in": "admin" in session})
+
+@app.route("/current_admin")
+def current_admin():
+    if "admin" in session:
+        return jsonify({"admin": session["admin"]})
+    return jsonify({"admin": None}), 401
+
+
 
 
 
