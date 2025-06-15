@@ -2,7 +2,9 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 from db import get_connection
-from datetime import datetime
+from datetime import datetime, timedelta
+app.permanent_session_lifetime = timedelta(minutes=30)
+
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"  # Put this BEFORE anything using sessions
@@ -18,7 +20,10 @@ def create_admin_table():
                 id SERIAL PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
                 email TEXT,
-                password_hash TEXT NOT NULL
+                password_hash TEXT NOT NULL,
+                is_online BOOLEAN DEFAULT FALSE,
+                is_typing BOOLEAN DEFAULT FALSE,
+                has_seen_last_message BOOLEAN DEFAULT TRUE
             );
         ''')
         conn.commit()
@@ -27,6 +32,7 @@ def create_admin_table():
         print("✅ 'admin' table ensured.")
     except Exception as e:
         print(f"❌ Error creating admin table: {e}")
+
 
 def create_messages_table():
     try:
@@ -48,10 +54,26 @@ def create_messages_table():
     except Exception as e:
         print(f"❌ Error creating messages table: {e}")
 
+def add_missing_columns():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("ALTER TABLE admin ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT FALSE;")
+        cur.execute("ALTER TABLE admin ADD COLUMN IF NOT EXISTS is_typing BOOLEAN DEFAULT FALSE;")
+        cur.execute("ALTER TABLE admin ADD COLUMN IF NOT EXISTS has_seen_last_message BOOLEAN DEFAULT TRUE;")
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ Missing columns added to 'admin' table.")
+    except Exception as e:
+        print(f"❌ Error adding columns: {e}")
+
+
 # Run it once at startup
 with app.app_context():
     create_admin_table()
     create_messages_table()
+    add_missing_columns()
 
 
 # --- Route: Home page ---
@@ -109,12 +131,20 @@ def login():
         cur = conn.cursor()
         cur.execute("SELECT password_hash FROM admin WHERE username = %s", (data["username"],))
         user = cur.fetchone()
-        cur.close()
-        conn.close()
 
         if user and check_password_hash(user[0], data["password"]):
             session["admin"] = data["username"]
+
+            # Set online status
+            cur.execute("UPDATE admin SET is_online = TRUE WHERE username = %s", (data["username"],))
+            conn.commit()
+            cur.close()
+            conn.close()
+
             return jsonify({"status": "success", "redirect": "/dashboard"}), 200
+
+        cur.close()
+        conn.close()
         return jsonify({"status": "failed", "message": "Invalid credentials"}), 401
     except Exception as e:
         print(f"❌ Login error: {e}")
@@ -143,8 +173,17 @@ def dashboard():
 
 @app.route("/logout")
 def logout():
-    session.pop("admin", None)
+    if "admin" in session:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE admin SET is_online = FALSE WHERE username = %s", (session["admin"],))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        session.pop("admin")
     return redirect("/")
+
 
 @app.route("/chat")
 def chat():
@@ -153,6 +192,24 @@ def chat():
 
     chat_with = request.args.get("with")
     return render_template("chat.html", chat_with=chat_with, current_admin=session["admin"])
+
+@app.route("/admin_status")
+def admin_status():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT username, is_online, is_typing FROM admin WHERE username != %s", (session["admin"],))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify([
+            {"username": r[0], "is_online": r[1], "is_typing": r[2]} for r in rows
+        ])
+    except Exception as e:
+        return jsonify({"status": "failed", "message": str(e)}), 500
 
 
 @app.route("/get_messages")
@@ -166,14 +223,24 @@ def get_messages():
     try:
         conn = get_connection()
         cur = conn.cursor()
+
+        # Get chat messages
         cur.execute("""
-    SELECT sender, text, timestamp, id 
-    FROM messages
-    WHERE (sender = %s AND receiver = %s)
-       OR (sender = %s AND receiver = %s)
-    ORDER BY timestamp ASC
-""", (admin, chat_with, chat_with, admin))
+            SELECT sender, text, timestamp, id 
+            FROM messages
+            WHERE (sender = %s AND receiver = %s)
+               OR (sender = %s AND receiver = %s)
+            ORDER BY timestamp ASC
+        """, (admin, chat_with, chat_with, admin))
         rows = cur.fetchall()
+
+        # Mark messages as seen by current user
+        cur.execute("""
+            UPDATE admin SET has_seen_last_message = TRUE
+            WHERE username = %s
+        """, (admin,))
+
+        conn.commit()
         cur.close()
         conn.close()
 
@@ -182,6 +249,7 @@ def get_messages():
     except Exception as e:
         print(f"❌ Error getting messages: {e}")
         return jsonify({"messages": [], "error": str(e)}), 500
+
 
 
 @app.route("/send_message", methods=["POST"])
@@ -197,10 +265,19 @@ def send_message():
     try:
         conn = get_connection()
         cur = conn.cursor()
+
+        # Send message
         cur.execute("""
             INSERT INTO messages (sender, receiver, text)
             VALUES (%s, %s, %s)
         """, (sender, receiver, text))
+
+        # Mark the message as not seen yet by the receiver
+        cur.execute("""
+            UPDATE admin SET has_seen_last_message = FALSE
+            WHERE username = %s
+        """, (receiver,))
+
         conn.commit()
         cur.close()
         conn.close()
@@ -208,6 +285,7 @@ def send_message():
     except Exception as e:
         print(f"❌ Error sending message: {e}")
         return jsonify({"status": "failed", "message": str(e)}), 500
+
         
 
 @app.route("/delete_message", methods=["POST"])
@@ -229,6 +307,25 @@ def delete_message():
     except Exception as e:
         print(f"❌ Error deleting message: {e}")
         return jsonify({"status": "failed", "message": str(e)}), 500
+
+@app.route("/set_typing", methods=["POST"])
+def set_typing():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+    data = request.get_json()
+    is_typing = data.get("is_typing", False)
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE admin SET is_typing = %s WHERE username = %s", (is_typing, session["admin"]))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "updated"})
+    except Exception as e:
+        print(f"❌ Error setting typing: {e}")
+        return jsonify({"status": "failed", "message": str(e)}), 500
+
 
 
 
