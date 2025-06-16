@@ -483,7 +483,7 @@ def user_profile(username):
     conn.close()
     return render_template("user_profile.html", user=user)
 
-@app.route('/profile', methods=['GET', 'POST'])
+@app.route('/profile', methods=['GET'])
 def profile():
     if "admin_id" not in session:
         return redirect("/login")
