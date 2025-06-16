@@ -394,19 +394,27 @@ def delete_account():
 def edit_info():
     if "admin" not in session:
         return redirect("/login")
+    
     username = request.form.get("username")
+    email = request.form.get("email")
     address = request.form.get("address")
     phone = request.form.get("phone")
     birthdate = request.form.get("birthdate")
+
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("UPDATE admin SET username = %s, email = %s WHERE username = %s",
-                    (new_username, new_email, session["admin"]))
+        cur.execute("""
+            UPDATE admin 
+            SET username = %s, email = %s, address = %s, phone = %s, birthdate = %s
+            WHERE username = %s
+        """, (username, email, address, phone, birthdate, session["admin"]))
+        
         conn.commit()
         cur.close()
         conn.close()
-        session["admin"] = new_username  # Update session
+
+        session["admin"] = username  # update session with new username
         return jsonify({"status": "success", "message": "Info updated!"})
     except Exception as e:
         return jsonify({"status": "failed", "message": str(e)}), 500
@@ -414,38 +422,58 @@ def edit_info():
 @app.route("/update_profile", methods=["POST"])
 def update_profile():
     if "admin" not in session:
-        return redirect("/")
+        return redirect("/login")
 
+    conn = get_connection()
+
+    cur.execute("SELECT id FROM admin WHERE username = %s", (session["admin"],))
+admin_id = cur.fetchone()[0]
+
+    # Get uploaded file
     file = request.files.get("profile_pic")
+    filename = None
+
+    if file and file.filename != "":
+        filename = secure_filename(file.filename)
+        file.save(os.path.join("static/uploads", filename))
+
+    # Get other form data
     address = request.form.get("address")
     phone = request.form.get("phone")
     birthdate = request.form.get("birthdate")
-    filename = None
 
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
+    # Build the query dynamically
+    update_fields = []
+    update_values = []
 
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file_path = os.path.join("static", "uploads", filename)
-            file.save(file_path)
+    if filename:
+        update_fields.append("profile_pic = %s")
+        update_values.append(filename)
+    if address:
+        update_fields.append("address = %s")
+        update_values.append(address)
+    if phone:
+        update_fields.append("phone = %s")
+        update_values.append(phone)
+    if birthdate:
+        update_fields.append("birthdate = %s")
+        update_values.append(birthdate)
 
-            cur.execute("UPDATE admin SET profile_pic = %s WHERE username = %s", (filename, session["admin"]))
-
-        cur.execute("""
-            UPDATE admin
-            SET address = %s, phone = %s, birthdate = %s
-            WHERE username = %s
-        """, (address, phone, birthdate, session["admin"]))
-
+    if update_fields:
+        update_values.append(admin_id)
+        sql = f"UPDATE admin SET {', '.join(update_fields)} WHERE id = %s"
+        cur.execute(sql, update_values)
         conn.commit()
-        cur.close()
-        conn.close()
-        return redirect("/dashboard")
-    except Exception as e:
-        print("❌ Profile update error:", e)
-        return "Profile update failed"
+
+        # Update session data (optional but helps keep dashboard updated)
+        cur.execute("SELECT * FROM admin WHERE id = %s", (admin_id,))
+        updated_admin = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return redirect("/profile")  # or render_template("profile.html", ...)
+
 
 @app.route('/user_profile/<username>')
 def user_profile(username):
@@ -462,10 +490,24 @@ def admin_profile():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT username, email, profile_pic, address, phone, birthdate FROM admin WHERE username = %s", (session['admin'],))
-    admin = cur.fetchone()
+    row = cur.fetchone()
     cur.close()
     conn.close()
+
+    if row:
+        admin = {
+            "username": row[0],
+            "email": row[1],
+            "profile_pic": row[2],
+            "address": row[3],
+            "phone": row[4],
+            "birthdate": row[5].isoformat() if row[5] else ''
+        }
+    else:
+        admin = {}
+
     return render_template("profile.html", admin=admin)
+
 
 
 if __name__ == "__main__":
