@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 from db import get_connection
 import os
 from datetime import datetime, timedelta
@@ -167,10 +168,11 @@ def dashboard():
     cur = conn.cursor()
     
     cur.execute("""
-        SELECT username, email, is_online, is_typing, has_seen_last_message
-        FROM admin
-        WHERE username != %s
-    """, (session["admin"],))
+    SELECT username, email, is_online, is_typing, has_seen_last_message,
+           profile_pic, address, phone, birthdate
+    FROM admin
+    WHERE username != %s
+""", (session["admin"],))
     
     users = cur.fetchall()
     cur.close()
@@ -381,6 +383,42 @@ def edit_info():
         return jsonify({"status": "success", "message": "Info updated!"})
     except Exception as e:
         return jsonify({"status": "failed", "message": str(e)}), 500
+
+@app.route("/update_profile", methods=["POST"])
+def update_profile():
+    if "admin" not in session:
+        return redirect("/")
+
+    file = request.files.get("profile_pic")
+    address = request.form.get("address")
+    phone = request.form.get("phone")
+    birthdate = request.form.get("birthdate")
+    filename = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join("static", "uploads", filename)
+            file.save(file_path)
+
+            cur.execute("UPDATE admin SET profile_pic = %s WHERE username = %s", (filename, session["admin"]))
+
+        cur.execute("""
+            UPDATE admin
+            SET address = %s, phone = %s, birthdate = %s
+            WHERE username = %s
+        """, (address, phone, birthdate, session["admin"]))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return redirect("/dashboard")
+    except Exception as e:
+        print("❌ Profile update error:", e)
+        return "Profile update failed"
 
 
 
