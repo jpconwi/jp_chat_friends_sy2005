@@ -74,6 +74,30 @@ def add_missing_columns():
     except Exception as e:
         print(f"❌ Error adding columns: {e}")
 
+def create_users_table():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT,
+                password_hash TEXT,
+                profile_pic TEXT,
+                address TEXT,
+                phone TEXT,
+                birthdate DATE
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ 'users' table ensured.")
+    except Exception as e:
+        print(f"❌ Error creating users table: {e}")
+
+
 
 
 
@@ -172,14 +196,14 @@ def dashboard():
         "profile_pic": admin_data[2] if admin_data[2] else ""
     }
 
-    # Fetch users
-    cur.execute("SELECT username FROM users")
-    users = cur.fetchall()
+    # Skip fetching users for now
+    users = []  # 👈 Provide empty list
 
     cur.close()
     conn.close()
 
     return render_template("dashboard.html", users=users, admin=admin)
+
 
 
 
@@ -448,6 +472,7 @@ if __name__ == "__main__":
         create_admin_table()
         create_messages_table()
         add_missing_columns()
+        create_users_table()
     app.run(debug=True)
 
 
