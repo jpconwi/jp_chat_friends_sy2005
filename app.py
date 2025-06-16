@@ -395,34 +395,41 @@ def delete_account():
         return jsonify({"status": "failed", "message": str(e)}), 500
 
 
-@app.route("/edit_info", methods=["POST"])
+@app.route('/edit_info', methods=['POST'])
 def edit_info():
-    if "admin" not in session:
+    if "admin_id" not in session:
         return redirect("/login")
-    
-    username = request.form.get("username")
-    email = request.form.get("email")
-    address = request.form.get("address")
-    phone = request.form.get("phone")
-    birthdate = request.form.get("birthdate")
 
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            UPDATE admin 
-            SET username = %s, email = %s, address = %s, phone = %s, birthdate = %s
-            WHERE username = %s
-        """, (username, email, address, phone, birthdate, session["admin"]))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
+    admin_id = session["admin_id"]
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-        session["admin"] = username  # update session with new username
-        return jsonify({"status": "success", "message": "Info updated!"})
-    except Exception as e:
-        return jsonify({"status": "failed", "message": str(e)}), 500
+    # Get form data
+    username = request.form["username"]
+    email = request.form["email"]
+    address = request.form["address"]
+    phone = request.form["phone"]
+    birthdate = request.form["birthdate"]
+
+    # Handle image upload
+    file = request.files.get("profile_pic")
+    filename = None
+    if file and file.filename:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join("static/uploads", filename))
+        cur.execute("UPDATE admin SET profile_pic=%s WHERE id=%s", (filename, admin_id))
+
+    # Update other info
+    cur.execute("""
+        UPDATE admin SET username=%s, email=%s, address=%s, phone=%s, birthdate=%s
+        WHERE id=%s
+    """, (username, email, address, phone, birthdate, admin_id))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/profile")
+
 
 @app.route("/update_profile", methods=["POST"])
 def update_profile():
