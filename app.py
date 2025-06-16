@@ -344,6 +344,45 @@ def current_admin():
         return jsonify({"admin": session["admin"]})
     return jsonify({"admin": None}), 401
 
+@app.route("/delete_account", methods=["POST"])
+def delete_account():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM admin WHERE username = %s", (session["admin"],))
+        cur.execute("DELETE FROM messages WHERE sender = %s OR receiver = %s", (session["admin"], session["admin"]))
+        conn.commit()
+        cur.close()
+        conn.close()
+        session.pop("admin")
+        return jsonify({"status": "deleted"})
+    except Exception as e:
+        return jsonify({"status": "failed", "message": str(e)}), 500
+
+
+@app.route("/edit_info", methods=["POST"])
+def edit_info():
+    if "admin" not in session:
+        return jsonify({"status": "unauthorized"}), 401
+    data = request.get_json()
+    new_username = data.get("username")
+    new_email = data.get("email")
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE admin SET username = %s, email = %s WHERE username = %s",
+                    (new_username, new_email, session["admin"]))
+        conn.commit()
+        cur.close()
+        conn.close()
+        session["admin"] = new_username  # Update session
+        return jsonify({"status": "success", "message": "Info updated!"})
+    except Exception as e:
+        return jsonify({"status": "failed", "message": str(e)}), 500
+
+
 
 
 
