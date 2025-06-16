@@ -393,10 +393,11 @@ def delete_account():
 @app.route("/edit_info", methods=["POST"])
 def edit_info():
     if "admin" not in session:
-        return jsonify({"status": "unauthorized"}), 401
-    data = request.get_json()
-    new_username = data.get("username")
-    new_email = data.get("email")
+        return redirect("/login")
+    username = request.form.get("username")
+    address = request.form.get("address")
+    phone = request.form.get("phone")
+    birthdate = request.form.get("birthdate")
     try:
         conn = get_connection()
         cur = conn.cursor()
