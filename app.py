@@ -161,43 +161,30 @@ def login():
 
 @app.route("/dashboard")
 def dashboard():
-    if "admin" not in session:
-        return redirect("/")
+    if "admin_id" not in session:
+        return redirect("/login")
 
-    conn = get_connection()
+    conn = get_db_connection()
     cur = conn.cursor()
 
-    # Get all other users
-    cur.execute("""
-        SELECT username, email, is_online, is_typing, has_seen_last_message,
-               profile_pic, address, phone, birthdate
-        FROM admin
-        WHERE username != %s
-    """, (session["admin"],))
-    users = cur.fetchall()
-
-    # Get the logged-in admin's profile
-    cur.execute("""
-        SELECT username, email, profile_pic, address, phone, birthdate
-        FROM admin
-        WHERE username = %s
-    """, (session["admin"],))
+    # Fetch admin info
+    cur.execute("SELECT username, email, profile_pic FROM admin WHERE id = %s", (session["admin_id"],))
     admin_data = cur.fetchone()
+    admin = {
+        "username": admin_data[0],
+        "email": admin_data[1],
+        "profile_pic": admin_data[2] if admin_data[2] else ""
+    }
+
+    # Fetch users
+    cur.execute("SELECT username FROM users")
+    users = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    # Convert admin tuple to dictionary
-    admin = {
-        "username": admin_data[0],
-        "email": admin_data[1],
-        "profile_pic": admin_data[2],
-        "address": admin_data[3],
-        "phone": admin_data[4],
-        "birthdate": admin_data[5]
-    }
-
     return render_template("dashboard.html", users=users, admin=admin)
+
 
 
 
