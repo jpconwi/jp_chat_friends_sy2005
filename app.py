@@ -471,7 +471,7 @@ def user_profile(username):
     conn.close()
     return render_template("user_profile.html", user=user)
 
-@app.route("/profile")
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if "admin_id" not in session:
         return redirect("/login")
@@ -479,11 +479,41 @@ def profile():
     admin_id = session["admin_id"]
     conn = get_db_connection()
     cur = conn.cursor()
+
+    if request.method == 'POST':
+        # Get data from the form
+        address = request.form['address']
+        phone = request.form['phone']
+        birthdate = request.form['birthdate']
+        profile_pic = request.files.get('profile_pic')
+
+        # Handle profile_pic upload if needed
+        if profile_pic and profile_pic.filename != '':
+            filename = secure_filename(profile_pic.filename)
+            upload_path = os.path.join('static/profile_pics', filename)
+            profile_pic.save(upload_path)
+
+            # Save to DB with profile_pic
+            cur.execute(
+                "UPDATE admin SET address = %s, phone = %s, birthdate = %s, profile_pic = %s WHERE id = %s",
+                (address, phone, birthdate, filename, admin_id)
+            )
+        else:
+            # Save to DB without changing profile_pic
+            cur.execute(
+                "UPDATE admin SET address = %s, phone = %s, birthdate = %s WHERE id = %s",
+                (address, phone, birthdate, admin_id)
+            )
+
+        conn.commit()
+
+    # Fetch the updated admin record
     cur.execute("SELECT * FROM admin WHERE id = %s", (admin_id,))
     admin = cur.fetchone()
     conn.close()
 
     return render_template("profile.html", admin=admin)
+
 
 
 
