@@ -11,7 +11,15 @@
     <header>
       <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
       <h1>Welcome, Admin!</h1>
-      <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
+
+      <div class="settings-dropdown">
+        <button class="logout-btn">⚙️ Settings</button>
+        <div class="settings-content">
+          <a href="/logout">🔓 Logout</a>
+          <a href="#" onclick="openEditModal()">✏️ Edit Info</a>
+          <a href="#" onclick="confirmDelete()">🗑️ Delete Account</a>
+        </div>
+      </div>
     </header>
 
     <section class="users-section">
@@ -28,6 +36,17 @@
     </section>
   </div>
 
+  <!-- Edit Modal -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeEditModal()">×</span>
+      <h3>Edit Information</h3>
+      <input type="text" id="edit-username" placeholder="New Username">
+      <input type="email" id="edit-email" placeholder="New Email">
+      <button onclick="submitEdit()">Save</button>
+    </div>
+  </div>
+
   <script>
     function fetchAdminStatus() {
       fetch("/admin_status")
@@ -36,14 +55,8 @@
           data.forEach(user => {
             const dot = document.getElementById("status-" + user.username);
             const typing = document.getElementById("typing-" + user.username);
-
-            if (dot) {
-              dot.style.backgroundColor = user.is_online ? "green" : "gray";
-            }
-
-            if (typing) {
-              typing.innerText = user.is_typing ? "Typing..." : "";
-            }
+            if (dot) dot.style.backgroundColor = user.is_online ? "green" : "gray";
+            if (typing) typing.innerText = user.is_typing ? "Typing..." : "";
           });
         })
         .catch(err => console.error("Error fetching admin status:", err));
@@ -54,23 +67,59 @@
     function startChat(username) {
       window.location.href = `/chat?with=${username}`;
     }
+
+    function toggleDarkMode() {
+      const darkMode = document.body.classList.toggle("dark-mode");
+      localStorage.setItem("darkMode", darkMode);
+      document.querySelector(".dark-mode-btn").innerText = darkMode ? "☀️" : "🌙";
+    }
+
+    window.onload = function () {
+      const darkModeEnabled = localStorage.getItem("darkMode") === "true";
+      if (darkModeEnabled) {
+        document.body.classList.add("dark-mode");
+        document.querySelector(".dark-mode-btn").innerText = "☀️";
+      }
+    };
+
+    function confirmDelete() {
+      if (confirm("Are you sure you want to delete your account? This action is irreversible.")) {
+        fetch("/delete_account", { method: "POST" })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === "deleted") {
+              alert("Account deleted successfully.");
+              window.location.href = "/";
+            } else {
+              alert("Error: " + data.message);
+            }
+          });
+      }
+    }
+
+    function openEditModal() {
+      document.getElementById("editModal").style.display = "block";
+    }
+
+    function closeEditModal() {
+      document.getElementById("editModal").style.display = "none";
+    }
+
+    function submitEdit() {
+      const username = document.getElementById("edit-username").value;
+      const email = document.getElementById("edit-email").value;
+
+      fetch("/edit_info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        if (data.status === "success") location.reload();
+      });
+    }
   </script>
-  <script>
-  function toggleDarkMode() {
-  const darkMode = document.body.classList.toggle("dark-mode");
-  localStorage.setItem("darkMode", darkMode);
-  document.querySelector(".dark-mode-btn").innerText = darkMode ? "☀️" : "🌙";
-}
-
-  // Load preference
-  window.onload = function () {
-    const darkModeEnabled = localStorage.getItem("darkMode") === "true";
-if (darkModeEnabled) {
-  document.body.classList.add("dark-mode");
-  document.querySelector(".dark-mode-btn").innerText = "☀️";
-}
-  };
-</script>
 </body>
-
 </html>
