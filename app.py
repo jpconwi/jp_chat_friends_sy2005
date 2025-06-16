@@ -420,6 +420,21 @@ def update_profile():
         print("❌ Profile update error:", e)
         return "Profile update failed"
 
+@app.route('/user_profile/<username>')
+def user_profile(username):
+    cur = conn.cursor()
+    cur.execute("SELECT username, email, profile_pic, address, phone, birthdate FROM users WHERE username = %s", (username,))
+    user = cur.fetchone()
+    return render_template("user_profile.html", user=user)
+
+@app.route('/profile')
+def admin_profile():
+    cur = conn.cursor()
+    cur.execute("SELECT username, email, profile_pic, address, phone, birthdate FROM admin WHERE username = %s", (session['admin'],))
+    admin = cur.fetchone()
+    return render_template("profile.html", admin=admin)
+
+
 
 
 
