@@ -18,16 +18,20 @@ def create_admin_table():
         conn = get_connection()
         cur = conn.cursor()
         cur.execute('''
-            CREATE TABLE IF NOT EXISTS admin (
-                id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL,
-                email TEXT,
-                password_hash TEXT NOT NULL,
-                is_online BOOLEAN DEFAULT FALSE,
-                is_typing BOOLEAN DEFAULT FALSE,
-                has_seen_last_message BOOLEAN DEFAULT TRUE
-            );
-        ''')
+    CREATE TABLE IF NOT EXISTS admin (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT,
+        password_hash TEXT NOT NULL,
+        profile_pic TEXT,
+        address TEXT,
+        phone TEXT,
+        birthdate DATE,
+        is_online BOOLEAN DEFAULT FALSE,
+        is_typing BOOLEAN DEFAULT FALSE,
+        has_seen_last_message BOOLEAN DEFAULT TRUE
+    );
+''')
         conn.commit()
         cur.close()
         conn.close()
@@ -70,14 +74,6 @@ def add_missing_columns():
     except Exception as e:
         print(f"❌ Error adding columns: {e}")
 
-
-# Run it once at startup
-if __name__ == "__main__":
-    with app.app_context():
-        create_admin_table()
-        create_messages_table()
-        add_missing_columns()
-    app.run(debug=True)
 
 
 
@@ -161,14 +157,14 @@ def login():
 
 @app.route("/dashboard")
 def dashboard():
-    if "admin_id" not in session:
+    if "admin" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor()
 
     # Fetch admin info
-    cur.execute("SELECT username, email, profile_pic FROM admin WHERE id = %s", (session["admin_id"],))
+    cur.execute("SELECT username, email, profile_pic FROM admin WHERE username = %s", (session["admin"],))
     admin_data = cur.fetchone()
     admin = {
         "username": admin_data[0],
@@ -184,7 +180,6 @@ def dashboard():
     conn.close()
 
     return render_template("dashboard.html", users=users, admin=admin)
-
 
 
 
@@ -429,17 +424,32 @@ def update_profile():
 
 @app.route('/user_profile/<username>')
 def user_profile(username):
+    conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT username, email, profile_pic, address, phone, birthdate FROM users WHERE username = %s", (username,))
     user = cur.fetchone()
+    cur.close()
+    conn.close()
     return render_template("user_profile.html", user=user)
 
 @app.route('/profile')
 def admin_profile():
+    conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT username, email, profile_pic, address, phone, birthdate FROM admin WHERE username = %s", (session['admin'],))
     admin = cur.fetchone()
+    cur.close()
+    conn.close()
     return render_template("profile.html", admin=admin)
+
+
+if __name__ == "__main__":
+    with app.app_context():
+        create_admin_table()
+        create_messages_table()
+        add_missing_columns()
+    app.run(debug=True)
+
 
 
 
