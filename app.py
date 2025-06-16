@@ -395,6 +395,7 @@ def delete_account():
         return jsonify({"status": "failed", "message": str(e)}), 500
 
 
+
 @app.route('/edit_info', methods=['POST'])
 def edit_info():
     if "admin_id" not in session:
@@ -411,15 +412,13 @@ def edit_info():
     phone = request.form["phone"]
     birthdate = request.form["birthdate"]
 
-    # Handle profile picture upload
     profile_pic = request.files["profile_pic"]
     filename = None
     if profile_pic and profile_pic.filename != "":
         filename = secure_filename(profile_pic.filename)
         upload_path = os.path.join("static/uploads", filename)
         profile_pic.save(upload_path)
-    
-    # Update database
+
     if filename:
         cur.execute("""
             UPDATE admin
@@ -435,7 +434,6 @@ def edit_info():
 
     conn.commit()
     conn.close()
-
     return redirect("/profile")
     
 @app.route("/update_profile", methods=["POST"])
