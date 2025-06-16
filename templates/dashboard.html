@@ -9,8 +9,12 @@
 <body>
   <div class="dashboard-container">
     <header>
-      <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
-      <h1>Welcome, Admin!</h1>
+      <div class="admin-info" onclick="window.location.href='/profile'">
+        <img src="{{ url_for('static', filename='uploads/' + admin.profile_pic) if admin.profile_pic else url_for('static', filename='default.jpg') }}" alt="Admin" class="admin-avatar">
+        <span>{{ admin.username }}</span>
+      </div>
+
+      <h1>Welcome, {{ admin.username }}!</h1>
 
       <div class="settings-dropdown">
         <button class="logout-btn">⚙️ Settings</button>
@@ -26,15 +30,10 @@
       <h2>Registered Users</h2>
       <ul class="user-list">
         {% for user in users %}
-        <li class="user-item" onclick="startChat('{{ user[0] }}')">
+        <li class="user-item" onclick="viewUserProfile('{{ user[0] }}')">
           <span id="status-{{ user[0] }}" class="status-dot"></span>
           {{ user[0] }}
           <span id="typing-{{ user[0] }}" class="typing-text"></span>
-          <img src="{{ url_for('static', filename='uploads/' + user[5]) }}" alt="Profile" width="50">
-      <p>📧 {{ user[1] }}</p>
-      <p>📍 {{ user[6] }}</p>
-      <p>📞 {{ user[7] }}</p>
-      <p>🎂 {{ user[8] }}</p>
         </li>
         {% endfor %}
       </ul>
@@ -69,8 +68,8 @@
 
     setInterval(fetchAdminStatus, 2000);
 
-    function startChat(username) {
-      window.location.href = `/chat?with=${username}`;
+    function viewUserProfile(username) {
+      window.location.href = `/user_profile/${username}`;
     }
 
     function toggleDarkMode() {
