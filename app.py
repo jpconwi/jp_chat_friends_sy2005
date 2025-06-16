@@ -421,58 +421,39 @@ def edit_info():
 
 @app.route("/update_profile", methods=["POST"])
 def update_profile():
-    if "admin" not in session:
+    if "admin_id" not in session:
         return redirect("/login")
 
-    conn = get_connection()
-
-    cur.execute("SELECT id FROM admin WHERE username = %s", (session["admin"],))
-admin_id = cur.fetchone()[0]
-
-    # Get uploaded file
-    file = request.files.get("profile_pic")
-    filename = None
+    admin_id = session["admin_id"]
+    file = request.files.get("profile_pic")  # <-- line 433 should look like this
 
     if file and file.filename != "":
         filename = secure_filename(file.filename)
-        file.save(os.path.join("static/uploads", filename))
+        filepath = os.path.join("static/uploads", filename)
+        file.save(filepath)
+        profile_pic = filename
+    else:
+        profile_pic = None
 
-    # Get other form data
-    address = request.form.get("address")
-    phone = request.form.get("phone")
-    birthdate = request.form.get("birthdate")
+    address = request.form["address"]
+    phone = request.form["phone"]
+    birthdate = request.form["birthdate"]
 
-    # Build the query dynamically
-    update_fields = []
-    update_values = []
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    if filename:
-        update_fields.append("profile_pic = %s")
-        update_values.append(filename)
-    if address:
-        update_fields.append("address = %s")
-        update_values.append(address)
-    if phone:
-        update_fields.append("phone = %s")
-        update_values.append(phone)
-    if birthdate:
-        update_fields.append("birthdate = %s")
-        update_values.append(birthdate)
+    if profile_pic:
+        cur.execute("UPDATE admin SET profile_pic=%s, address=%s, phone=%s, birthdate=%s WHERE id=%s",
+                    (profile_pic, address, phone, birthdate, admin_id))
+    else:
+        cur.execute("UPDATE admin SET address=%s, phone=%s, birthdate=%s WHERE id=%s",
+                    (address, phone, birthdate, admin_id))
 
-    if update_fields:
-        update_values.append(admin_id)
-        sql = f"UPDATE admin SET {', '.join(update_fields)} WHERE id = %s"
-        cur.execute(sql, update_values)
-        conn.commit()
-
-        # Update session data (optional but helps keep dashboard updated)
-        cur.execute("SELECT * FROM admin WHERE id = %s", (admin_id,))
-        updated_admin = cur.fetchone()
-
-    cur.close()
+    conn.commit()
     conn.close()
 
-    return redirect("/profile")  # or render_template("profile.html", ...)
+    return redirect("/profile")
+
 
 
 @app.route('/user_profile/<username>')
