@@ -466,26 +466,17 @@ def user_profile(username):
     conn.close()
     return render_template("user_profile.html", user=user)
 
-@app.route('/profile')
-def admin_profile():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT username, email, profile_pic, address, phone, birthdate FROM admin WHERE username = %s", (session['admin'],))
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
+@app.route("/profile")
+def profile():
+    if "admin_id" not in session:
+        return redirect("/login")
 
-    if row:
-        admin = {
-            "username": row[0],
-            "email": row[1],
-            "profile_pic": row[2],
-            "address": row[3],
-            "phone": row[4],
-            "birthdate": row[5].isoformat() if row[5] else ''
-        }
-    else:
-        admin = {}
+    admin_id = session["admin_id"]
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM admin WHERE id = %s", (admin_id,))
+    admin = cur.fetchone()
+    conn.close()
 
     return render_template("profile.html", admin=admin)
 
