@@ -6,11 +6,16 @@ from db import get_connection
 import os
 from datetime import datetime, timedelta
 
-
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
 app.permanent_session_lifetime = timedelta(minutes=30)
 CORS(app)
+
+# ✅ Ensure uploads folder exists
+UPLOAD_FOLDER = os.path.join("static", "uploads")
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
 
 # === CREATE admin TABLE IF NOT EXISTS ===
 def create_admin_table():
