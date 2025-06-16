@@ -30,6 +30,11 @@
           <span id="status-{{ user[0] }}" class="status-dot"></span>
           {{ user[0] }}
           <span id="typing-{{ user[0] }}" class="typing-text"></span>
+          <img src="{{ url_for('static', filename='uploads/' + user[5]) }}" alt="Profile" width="50">
+      <p>📧 {{ user[1] }}</p>
+      <p>📍 {{ user[6] }}</p>
+      <p>📞 {{ user[7] }}</p>
+      <p>🎂 {{ user[8] }}</p>
         </li>
         {% endfor %}
       </ul>
