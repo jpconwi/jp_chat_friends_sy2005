@@ -166,19 +166,39 @@ def dashboard():
 
     conn = get_connection()
     cur = conn.cursor()
-    
+
+    # Get all other users
     cur.execute("""
-    SELECT username, email, is_online, is_typing, has_seen_last_message,
-           profile_pic, address, phone, birthdate
-    FROM admin
-    WHERE username != %s
-""", (session["admin"],))
-    
+        SELECT username, email, is_online, is_typing, has_seen_last_message,
+               profile_pic, address, phone, birthdate
+        FROM admin
+        WHERE username != %s
+    """, (session["admin"],))
     users = cur.fetchall()
+
+    # Get the logged-in admin's profile
+    cur.execute("""
+        SELECT username, email, profile_pic, address, phone, birthdate
+        FROM admin
+        WHERE username = %s
+    """, (session["admin"],))
+    admin_data = cur.fetchone()
+
     cur.close()
     conn.close()
 
-    return render_template("dashboard.html", users=users)
+    # Convert admin tuple to dictionary
+    admin = {
+        "username": admin_data[0],
+        "email": admin_data[1],
+        "profile_pic": admin_data[2],
+        "address": admin_data[3],
+        "phone": admin_data[4],
+        "birthdate": admin_data[5]
+    }
+
+    return render_template("dashboard.html", users=users, admin=admin)
+
 
 
 @app.route("/logout")
