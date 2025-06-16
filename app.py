@@ -411,26 +411,33 @@ def edit_info():
     phone = request.form["phone"]
     birthdate = request.form["birthdate"]
 
-    # Handle image upload
-    file = request.files.get("profile_pic")
+    # Handle profile picture upload
+    profile_pic = request.files["profile_pic"]
     filename = None
-    if file and file.filename:
-        filename = secure_filename(file.filename)
-        file.save(os.path.join("static/uploads", filename))
-        cur.execute("UPDATE admin SET profile_pic=%s WHERE id=%s", (filename, admin_id))
-
-    # Update other info
-    cur.execute("""
-        UPDATE admin SET username=%s, email=%s, address=%s, phone=%s, birthdate=%s
-        WHERE id=%s
-    """, (username, email, address, phone, birthdate, admin_id))
+    if profile_pic and profile_pic.filename != "":
+        filename = secure_filename(profile_pic.filename)
+        upload_path = os.path.join("static/uploads", filename)
+        profile_pic.save(upload_path)
+    
+    # Update database
+    if filename:
+        cur.execute("""
+            UPDATE admin
+            SET username=%s, email=%s, address=%s, phone=%s, birthdate=%s, profile_pic=%s
+            WHERE id=%s
+        """, (username, email, address, phone, birthdate, filename, admin_id))
+    else:
+        cur.execute("""
+            UPDATE admin
+            SET username=%s, email=%s, address=%s, phone=%s, birthdate=%s
+            WHERE id=%s
+        """, (username, email, address, phone, birthdate, admin_id))
 
     conn.commit()
     conn.close()
 
     return redirect("/profile")
-
-
+    
 @app.route("/update_profile", methods=["POST"])
 def update_profile():
     if "admin_id" not in session:
