@@ -11,7 +11,7 @@
     <h1>Admin Profile</h1>
     
     <!-- Ensure this points to your edit route -->
-    <form action="/edit_info" method="POST" enctype="multipart/form-data">
+    <form action="/profile" method="POST" enctype="multipart/form-data">
       <div class="profile-image">
         <img src="{{ url_for('static', filename='uploads/' + admin.profile_pic) if admin.profile_pic else url_for('static', filename='default.jpg') }}" alt="Profile Picture" id="preview">
         <input type="file" name="profile_pic" onchange="previewImage(event)">
