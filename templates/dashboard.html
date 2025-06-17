@@ -38,17 +38,19 @@
         {% endfor %}
       </ul>
     </section>
-  </div>
-
   <!-- Edit Modal -->
-  <div class="modal" id="editModal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeEditModal()">×</span>
-      <h3>Edit Information</h3>
-      <input type="text" id="edit-username" placeholder="New Username">
-      <input type="email" id="edit-email" placeholder="New Email">
-      <button onclick="submitEdit()">Save</button>
-    </div>
+  <!-- Edit Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeEditModal()">×</span>
+    <h3>Edit Information</h3>
+    <form action="/edit_info" method="POST">
+      <input type="text" name="username" placeholder="New Username" required>
+      <input type="email" name="email" placeholder="New Email" required>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</div>
   </div>
 
   <script>
@@ -104,26 +106,9 @@
     function openEditModal() {
       document.getElementById("editModal").style.display = "block";
     }
-
     function closeEditModal() {
-      document.getElementById("editModal").style.display = "none";
-    }
-
-    function submitEdit() {
-      const username = document.getElementById("edit-username").value;
-      const email = document.getElementById("edit-email").value;
-
-      fetch("/edit_info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email })
-      })
-      .then(res => res.json())
-      .then(data => {
-        alert(data.message);
-        if (data.status === "success") location.reload();
-      });
-    }
+  document.getElementById("editModal").style.display = "none";
+}
   </script>
 </body>
 </html>
