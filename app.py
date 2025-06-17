@@ -13,8 +13,8 @@ CORS(app)
 
 # ✅ Ensure uploads folder exists
 UPLOAD_FOLDER = os.path.join("static", "uploads")
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Ensure the folder exists
+
 
 
 # === CREATE admin TABLE IF NOT EXISTS ===
@@ -159,17 +159,21 @@ def login():
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT password_hash FROM admin WHERE username = %s", (data["username"],))
+
+        # Fetch id and password_hash for the given username
+        cur.execute("SELECT id, password_hash FROM admin WHERE username = %s", (data["username"],))
         user = cur.fetchone()
 
-        if user and check_password_hash(user[0], data["password"]):
+        if user and check_password_hash(user[1], data["password"]):
             session["admin"] = data["username"]
+            session["admin_id"] = user[0]  # ✅ Save admin_id to session
             session.permanent = True
             session["login_time"] = datetime.utcnow().isoformat()
 
             # Set online status
             cur.execute("UPDATE admin SET is_online = TRUE WHERE username = %s", (data["username"],))
             conn.commit()
+
             cur.close()
             conn.close()
 
@@ -401,75 +405,18 @@ def edit_info():
     if "admin_id" not in session:
         return redirect("/login")
 
-    admin_id = session["admin_id"]
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    # Get form data
     username = request.form["username"]
     email = request.form["email"]
-    address = request.form["address"]
-    phone = request.form["phone"]
-    birthdate = request.form["birthdate"]
-
-    profile_pic = request.files["profile_pic"]
-    filename = None
-    if profile_pic and profile_pic.filename != "":
-        filename = secure_filename(profile_pic.filename)
-        upload_path = os.path.join("static/uploads", filename)
-        profile_pic.save(upload_path)
-
-    if filename:
-        cur.execute("""
-            UPDATE admin
-            SET username=%s, email=%s, address=%s, phone=%s, birthdate=%s, profile_pic=%s
-            WHERE id=%s
-        """, (username, email, address, phone, birthdate, filename, admin_id))
-    else:
-        cur.execute("""
-            UPDATE admin
-            SET username=%s, email=%s, address=%s, phone=%s, birthdate=%s
-            WHERE id=%s
-        """, (username, email, address, phone, birthdate, admin_id))
-
-    conn.commit()
-    conn.close()
-    return redirect("/profile")
-    
-@app.route("/update_profile", methods=["POST"])
-def update_profile():
-    if "admin_id" not in session:
-        return redirect("/login")
-
     admin_id = session["admin_id"]
-    file = request.files.get("profile_pic")  # <-- line 433 should look like this
 
-    if file and file.filename != "":
-        filename = secure_filename(file.filename)
-        filepath = os.path.join("static/uploads", filename)
-        file.save(filepath)
-        profile_pic = filename
-    else:
-        profile_pic = None
-
-    address = request.form["address"]
-    phone = request.form["phone"]
-    birthdate = request.form["birthdate"]
-
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor()
-
-    if profile_pic:
-        cur.execute("UPDATE admin SET profile_pic=%s, address=%s, phone=%s, birthdate=%s WHERE id=%s",
-                    (profile_pic, address, phone, birthdate, admin_id))
-    else:
-        cur.execute("UPDATE admin SET address=%s, phone=%s, birthdate=%s WHERE id=%s",
-                    (address, phone, birthdate, admin_id))
-
+    cur.execute("UPDATE admin SET username=%s, email=%s WHERE id=%s", (username, email, admin_id))
     conn.commit()
     conn.close()
 
-    return redirect("/profile")
+    return redirect("/dashboard")
+    
 
 
 
@@ -483,13 +430,13 @@ def user_profile(username):
     conn.close()
     return render_template("user_profile.html", user=user)
 
-@app.route('/profile', methods=['GET'])
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if "admin_id" not in session:
         return redirect("/login")
 
     admin_id = session["admin_id"]
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor()
 
     if request.method == 'POST':
@@ -499,19 +446,16 @@ def profile():
         birthdate = request.form['birthdate']
         profile_pic = request.files.get('profile_pic')
 
-        # Handle profile_pic upload if needed
         if profile_pic and profile_pic.filename != '':
             filename = secure_filename(profile_pic.filename)
-            upload_path = os.path.join('static/profile_pics', filename)
+            upload_path = os.path.join('static/uploads', filename)  # make sure this folder exists
             profile_pic.save(upload_path)
 
-            # Save to DB with profile_pic
             cur.execute(
                 "UPDATE admin SET address = %s, phone = %s, birthdate = %s, profile_pic = %s WHERE id = %s",
                 (address, phone, birthdate, filename, admin_id)
             )
         else:
-            # Save to DB without changing profile_pic
             cur.execute(
                 "UPDATE admin SET address = %s, phone = %s, birthdate = %s WHERE id = %s",
                 (address, phone, birthdate, admin_id)
@@ -519,12 +463,13 @@ def profile():
 
         conn.commit()
 
-    # Fetch the updated admin record
     cur.execute("SELECT * FROM admin WHERE id = %s", (admin_id,))
     admin = cur.fetchone()
+    cur.close()
     conn.close()
 
     return render_template("profile.html", admin=admin)
+
 
 
 
